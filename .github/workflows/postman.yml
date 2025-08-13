@@ -1,4 +1,4 @@
-name: Postman CLI CI
+name: Run Postman Tests
 
 on:
   push:
@@ -7,21 +7,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  run-postman:
+  test:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Postman CLI
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install Newman and HTML reporter
         run: |
-          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+          npm install -g newman newman-reporter-htmlextra
 
-      - name: Login to Postman CLI
-        run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-
-      - name: Run collection
+      - name: Run Postman collection
         run: |
-          postman collection run 4182217-69eb2a84-39e9-4337-97ba-017ccd73d212 -e 4182217-4e6c0642-15a1-403c-97ff-f1bf5801bb16
+          newman run MyCollection.json \
+            -e MyEnvironment.json \
+            -r htmlextra \
+            --reporter-htmlextra-export newman-report.html
 
+      - name: Upload report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: postman-html-report
+          path: newman-report.html
